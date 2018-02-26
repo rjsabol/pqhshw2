@@ -1,0 +1,239 @@
+---
+title: "ch6ex"
+author: "rachel sabol"
+date: "February 26, 2018"
+output: pdf_document
+---
+
+Exercise 9- College dataset
+
+(a) Split the data set into a training set and a test set.
+
+```{r}
+library(ISLR)
+data(College)
+set.seed(2)
+train=sample(1:nrow(College), nrow(College)/2)
+test=-train
+train=College[train,]
+test=College[test,]
+dim(test);dim(train)
+```
+
+(b) Fit a linear model using least squares on the training set, and
+report the test error obtained.
+
+```{r}
+lm.fit=lm(Apps~., data=train)
+lm.pred=predict(lm.fit, test)
+mean((lm.pred-test$Apps)^2)
+1-(mean((lm.pred-test$Apps)^2)/mean((mean(test$Apps)-test$Apps)^2))
+```
+
+(c) Fit a ridge regression model on the training set, with λ chosen
+by cross-validation. Report the test error obtained.
+
+```{r}
+library(glmnet)
+train.mat=model.matrix(Apps~.,data=train)
+test.mat=model.matrix(Apps~., data=test)
+grid=10^(seq(10,-2,length=100))
+ridge.fit=glmnet(train.mat,train$Apps,alpha=0,lambda=grid,thresh=1e-12)
+ridge.cv=cv.glmnet(train.mat, train$Apps, alpha=0,lambda=grid,thresh=1e-12)
+lambduh=ridge.cv$lambda.min
+lambduh
+```
+
+```{r}
+ridge.pred=predict(ridge.fit, s=lambduh, newx=test.mat)
+mean((ridge.pred-test$Apps)^2)
+1-(mean((ridge.pred-test$Apps)^2)/mean((mean(test$Apps)-test$Apps)^2))
+```
+
+(d) Fit a lasso model on the training set, with λ chosen by crossvalidation.
+Report the test error obtained, along with the number
+of non-zero coefficient estimates.
+
+```{r}
+lasso.fit=glmnet(train.mat,train$Apps,alpha=1,lambda=grid,thresh=1e-12)
+lasso.cv=cv.glmnet(train.mat, train$Apps, alpha=1,lambda=grid,thresh=1e-12)
+lambduh=lasso.cv$lambda.min
+lambduh
+```
+
+```{r}
+lasso.pred=predict(lasso.fit, s=lambduh, newx=test.mat)
+mean((lasso.pred-test$Apps)^2)
+1-(mean((lasso.pred-test$Apps)^2)/mean((mean(test$Apps)-test$Apps)^2))
+predict(lasso.fit, s=lambduh, type="coefficients")
+```
+
+(e) Fit a PCR model on the training set, with M chosen by crossvalidation.
+Report the test error obtained, along with the value
+of M selected by cross-validation.
+
+```{r}
+library(pls)
+pcr.fit=pcr(Apps~.,data=train, scale=TRUE, validation="CV")
+validationplot(pcr.fit, val.type="MSEP")
+summary(pcr.fit)
+#choose M=4 to explain 85%
+```
+
+```{r}
+pcr.pred=predict(pcr.fit, test, ncomp=4)
+mean((pcr.pred-test$Apps)^2)
+1-(mean((pcr.pred-test$Apps)^2)/mean((mean(test$Apps)-test$Apps)^2))
+```
+
+(f) Fit a PLS model on the training set, with M chosen by crossvalidation.
+Report the test error obtained, along with the value
+of M selected by cross-validation.
+
+```{r}
+pls.fit=plsr(Apps~.,data=train,scale=TRUE, validation="CV")
+validationplot(pls.fit,val.type="MSEP")
+summary(pls.fit)
+#choose m=2 to explain 85%
+```
+```{r}
+pls.pred=predict(pls.fit,test,ncomp=2)
+mean((pls.pred-test$Apps)^2)
+1-(mean((pls.pred-test$Apps)^2)/mean((mean(test$Apps)-test$Apps)^2))
+```
+
+(g) Comment on the results obtained. How accurately can we predict
+the number of college applications received? Is there much
+difference among the test errors resulting from these five approaches?
+
+The test errors for each method are as follows:
+Linear regression- 1475528
+Ridge regression- 1590641
+Lasso-1557517
+PCR- 3326333
+PLS-2868968
+
+The R squared value for each model are as follows:
+Linear regression- 0.9164977
+Ridge regression- 0.9127352
+Lasso- 0.9118578
+PCR- 0.8117579
+PLS- 0.8376408
+
+Based on these metrics, the linear regression model performs the best. Both the ridge regression and the lasso perform similarly to the linear regression. The principal components regression and the partial least squares perform markedly worse.
+
+Question 11- Boston data set
+
+(a) Try out some of the regression methods explored in this chapter,
+such as best subset selection, the lasso, ridge regression, and
+PCR. Present and discuss results for the approaches that you
+consider.
+
+```{r}
+library(MASS)
+data(Boston)
+train=sample(1:nrow(Boston), nrow(Boston)/2)
+test=-train
+train=Boston[train,]
+test=Boston[test,]
+dim(test);dim(train)
+```
+
+Linear model:
+
+```{r}
+lm.fit=lm(crim~., data=train)
+lm.pred=predict(lm.fit, test)
+mean((lm.pred-test$crim)^2)
+1-(mean((lm.pred-test$crim)^2)/mean((mean(test$crim)-test$crim)^2))
+```
+
+Ridge regression
+
+```{r}
+library(glmnet)
+train.mat=model.matrix(crim~.,data=train)
+test.mat=model.matrix(crim~., data=test)
+grid=10^(seq(10,-2,length=100))
+ridge.fit=glmnet(train.mat,train$crim,alpha=0,lambda=grid,thresh=1e-12)
+ridge.cv=cv.glmnet(train.mat, train$crim, alpha=0,lambda=grid,thresh=1e-12)
+lambduh=ridge.cv$lambda.min
+lambduh
+```
+
+```{r}
+ridge.pred=predict(ridge.fit, s=lambduh, newx=test.mat)
+coef(ridge.cv)
+mean((ridge.pred-test$crim)^2)
+1-(mean((ridge.pred-test$crim)^2)/mean((mean(test$crim)-test$crim)^2))
+```
+
+Lasso
+
+```{r}
+lasso.fit=glmnet(train.mat,train$crim,alpha=1,lambda=grid,thresh=1e-12)
+lasso.cv=cv.glmnet(train.mat, train$crim, alpha=1,lambda=grid,thresh=1e-12)
+lambduh=lasso.cv$lambda.min
+lambduh
+```
+
+```{r}
+lasso.pred=predict(lasso.fit, s=lambduh, newx=test.mat)
+mean((lasso.pred-test$crim)^2)
+1-(mean((lasso.pred-test$crim)^2)/mean((mean(test$crim)-test$crim)^2))
+predict(lasso.fit, s=lambduh, type="coefficients")
+```
+
+PCR
+
+```{r}
+library(pls)
+pcr.fit=pcr(crim~.,data=train, scale=TRUE, validation="CV")
+validationplot(pcr.fit, val.type="MSEP")
+summary(pcr.fit)
+#choose M=6 to explain 85%
+```
+
+```{r}
+pcr.pred=predict(pcr.fit, test, ncomp=6)
+mean((pcr.pred-test$crim)^2)
+1-(mean((pcr.pred-test$crim)^2)/mean((mean(test$crim)-test$crim)^2))
+```
+
+PLS
+
+```{r}
+pls.fit=plsr(crim~.,data=train,scale=TRUE, validation="CV")
+validationplot(pls.fit,val.type="MSEP")
+summary(pls.fit)
+#choose m=8 to explain 85%
+```
+
+```{r}
+pls.pred=predict(pls.fit,test,ncomp=8)
+mean((pls.pred-test$crim)^2)
+1-(mean((pls.pred-test$crim)^2)/mean((mean(test$crim)-test$crim)^2))
+
+```
+
+The test error and R squared value for each model are as follows:
+Linear regression- 69.09398, 0.3184834
+Ridge- 68.63729, 0.322988
+Lasso- 68.78914, 0.3214902
+PCR- 68.62744, 0.3230851
+PLS- 69.10215, 0.3184028
+
+(b) Propose a model (or set of models) that seem to perform well on
+this data set, and justify your answer. Make sure that you are
+evaluating model performance using validation set error, crossvalidation,
+or some other reasonable alternative, as opposed to
+using training error.
+
+The model that performed the best using the validation set error was the ridge regression model. The test error was 68.63729 and the R squared value was 0.322988.
+
+(c) Does your chosen model involve all of the features in the data
+set? Why or why not?
+
+The model does include all features in the data, although some have very low coefficients. As opposed to the lasso model, ridge does not attempt to completey remove any predictive features from the model. However, about 8 of the variables had coefficients that were near 0 (<0.1)
+
+
